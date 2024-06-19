@@ -11,7 +11,9 @@ import {
   ActionPostRequest,
 } from "@/lib/actions";
 import {
+  clusterApiUrl,
   ComputeBudgetProgram,
+  Connection,
   Keypair,
   PublicKey,
   Transaction,
@@ -49,11 +51,11 @@ export const POST = async (req: Request) => {
       });
     }
 
+    const connection = new Connection(clusterApiUrl("devnet"));
+
     const signer = Keypair.generate();
     const transaction = new Transaction();
     transaction.feePayer = account;
-    // transaction.feePayer = signer.publicKey;
-    // transaction.recentBlockhash = new PublicKey(0).toBase58();
 
     transaction.add(
       // note: `createPostResponse` requires at least 1 non-memo instruction
@@ -73,6 +75,10 @@ export const POST = async (req: Request) => {
       }),
     );
 
+    transaction.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
+
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         transaction,
@@ -81,7 +87,7 @@ export const POST = async (req: Request) => {
       signers: [signer],
     });
 
-    // console.log("base64 transaction:", payload.transaction);
+    console.log("base64 transaction:", payload.transaction);
 
     return Response.json(payload, {
       headers: ACTIONS_CORS_HEADERS,
