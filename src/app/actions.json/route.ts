@@ -20,3 +20,7 @@ export const GET = async () => {
     headers: ACTIONS_CORS_HEADERS,
   });
 };
+
+// DO NOT FORGET TO INCLUDE THE `OPTIONS` HTTP METHOD
+// THIS WILL ENSURE CORS WORKS FOR BLINKS
+export const OPTIONS = GET;
