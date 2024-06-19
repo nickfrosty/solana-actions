@@ -73,7 +73,10 @@ export const GET = async (req: Request) => {
     console.log(err);
     let message = "An unknown error occurred";
     if (typeof err == "string") message = err;
-    return new Response(message, { status: 400 });
+    return new Response(message, {
+      status: 400,
+      headers: ACTIONS_CORS_HEADERS,
+    });
   }
 };
 
@@ -89,7 +92,10 @@ export const POST = async (req: Request) => {
     try {
       account = new PublicKey(body.account);
     } catch (err) {
-      return new Response('Invalid "account" provided', { status: 400 });
+      return new Response('Invalid "account" provided', {
+        status: 400,
+        headers: ACTIONS_CORS_HEADERS,
+      });
     }
 
     // ensure the receiving account will be rent exempt
@@ -128,7 +134,10 @@ export const POST = async (req: Request) => {
     console.log(err);
     let message = "An unknown error occurred";
     if (typeof err == "string") message = err;
-    return new Response(message, { status: 400 });
+    return new Response(message, {
+      status: 400,
+      headers: ACTIONS_CORS_HEADERS,
+    });
   }
 };
 
