@@ -14,7 +14,6 @@ import {
   clusterApiUrl,
   ComputeBudgetProgram,
   Connection,
-  Keypair,
   PublicKey,
   Transaction,
   TransactionInstruction,
@@ -51,29 +50,24 @@ export const POST = async (req: Request) => {
       });
     }
 
-    const connection = new Connection(clusterApiUrl("devnet"));
+    const connection = new Connection(
+      process.env.SOLANA_RPC! || clusterApiUrl("devnet"),
+    );
 
-    const signer = Keypair.generate();
-    const transaction = new Transaction();
-    transaction.feePayer = account;
-
-    transaction.add(
+    const transaction = new Transaction().add(
       // note: `createPostResponse` requires at least 1 non-memo instruction
       ComputeBudgetProgram.setComputeUnitPrice({
         microLamports: 1000,
       }),
       new TransactionInstruction({
         programId: new PublicKey(MEMO_PROGRAM_ID),
-        data: Buffer.from("this is a simple memo message", "utf8"),
-        keys: [
-          {
-            isSigner: true,
-            isWritable: false,
-            pubkey: signer.publicKey,
-          },
-        ],
+        data: Buffer.from("this is a simple memo message2", "utf8"),
+        keys: [],
       }),
     );
+
+    // set the end user as the fee payer
+    transaction.feePayer = account;
 
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
@@ -84,10 +78,9 @@ export const POST = async (req: Request) => {
         transaction,
         message: "Post this memo on-chain",
       },
-      signers: [signer],
+      // no additional signers are required for this transaction
+      // signers: [],
     });
-
-    console.log("base64 transaction:", payload.transaction);
 
     return Response.json(payload, {
       headers: ACTIONS_CORS_HEADERS,

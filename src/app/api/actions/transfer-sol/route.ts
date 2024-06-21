@@ -102,8 +102,11 @@ export const POST = async (req: Request) => {
       });
     }
 
+    const connection = new Connection(
+      process.env.SOLANA_RPC! || clusterApiUrl("devnet"),
+    );
+
     // ensure the receiving account will be rent exempt
-    const connection = new Connection(clusterApiUrl("devnet"));
     const minimumBalance = await connection.getMinimumBalanceForRentExemption(
       0, // note: simple accounts that just store native SOL have `0` bytes of data
     );
@@ -121,6 +124,13 @@ export const POST = async (req: Request) => {
         lamports: amount * LAMPORTS_PER_SOL,
       }),
     );
+
+    // set the end user as the fee payer
+    transaction.feePayer = account;
+
+    transaction.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
 
     const payload: ActionPostResponse = await createPostResponse({
       fields: {

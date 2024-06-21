@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import { useEffect, useState } from "react";
-import { DEFAULT_VALIDATOR_PUBKEY } from "../api/actions/stake/const";
+import { DEFAULT_VALIDATOR_VOTE_PUBKEY } from "../api/actions/stake/const";
 
 export default function Pages() {
   const apiPath = "/api/actions/stake";
   const [apiEndpoint, setApiEndpoint] = useState("");
 
   // todo: allow the user to update this via the UI
-  const validator = DEFAULT_VALIDATOR_PUBKEY.toBase58();
+  const validator = DEFAULT_VALIDATOR_VOTE_PUBKEY.toBase58();
 
   useEffect(() => {
     setApiEndpoint(

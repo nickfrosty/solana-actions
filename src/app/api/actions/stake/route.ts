@@ -11,13 +11,16 @@ import {
 } from "@/lib/actions";
 import {
   Authorized,
+  clusterApiUrl,
+  Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   StakeProgram,
   Transaction,
+  VoteProgram,
 } from "@solana/web3.js";
-import { DEFAULT_STAKE_AMOUNT, DEFAULT_VALIDATOR_PUBKEY } from "./const";
+import { DEFAULT_STAKE_AMOUNT, DEFAULT_VALIDATOR_VOTE_PUBKEY } from "./const";
 
 export const GET = async (req: Request) => {
   try {
@@ -32,13 +35,13 @@ export const GET = async (req: Request) => {
     const payload: ActionGetResponse = {
       title: "Actions Example - Staking SOL",
       icon: new URL("/solana_devs.jpg", requestUrl.origin).toString(),
-      description: "Stake your SOL to secure the Solana network",
+      description: `Stake your SOL to the ${validator.toBase58()} validator to secure the Solana network`,
       label: "Stake your SOL", // this value will be ignored since `links.actions` exists
       links: {
         actions: [
           {
             label: "Stake 1 SOL", // button text
-            href: `${baseHref}&amount=${"1"}`,
+            href: `${baseHref}&amount=${"0.11"}`,
           },
           {
             label: "Stake 5 SOL", // button text
@@ -99,12 +102,19 @@ export const POST = async (req: Request) => {
       });
     }
 
+    const connection = new Connection(
+      process.env.SOLANA_RPC! || clusterApiUrl("devnet"),
+    );
+
+    const minStake = await connection.getStakeMinimumDelegation();
+    if (amount < minStake.value) {
+      console.log("minimum stake:", minStake);
+      throw `The minimum stake amount is ${minStake.value}`;
+    }
+
     const stakeKeypair = Keypair.generate();
 
-    const transaction = new Transaction();
-    transaction.feePayer = account;
-
-    transaction.add(
+    const transaction = new Transaction().add(
       StakeProgram.createAccount({
         stakePubkey: stakeKeypair.publicKey,
         authorized: new Authorized(account, account),
@@ -119,6 +129,13 @@ export const POST = async (req: Request) => {
         votePubkey: validator,
       }),
     );
+
+    // set the end user as the fee payer
+    transaction.feePayer = account;
+
+    transaction.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
 
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
@@ -144,7 +161,7 @@ export const POST = async (req: Request) => {
 };
 
 function validatedQueryParams(requestUrl: URL) {
-  let validator: PublicKey = DEFAULT_VALIDATOR_PUBKEY;
+  let validator: PublicKey = DEFAULT_VALIDATOR_VOTE_PUBKEY;
   let amount: number = DEFAULT_STAKE_AMOUNT;
 
   try {
